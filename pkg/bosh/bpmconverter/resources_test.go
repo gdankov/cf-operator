@@ -211,6 +211,13 @@ var _ = Describe("BPM Converter", func() {
 					}
 					config := bpmConfigs[1]["cflinuxfs3-rootfs-setup"]
 					config.ActivePassiveProbes = activePassiveProbes
+					config.Ports = []bpm.Port{
+						{
+							Name:     "rep-server",
+							Protocol: "TCP",
+							Internal: 1801,
+						},
+					}
 					bpmConfigs[1]["cflinuxfs3-rootfs-setup"] = config
 
 					resources, err := act(bpmConfigs[1], m.InstanceGroups[1])
@@ -220,6 +227,7 @@ var _ = Describe("BPM Converter", func() {
 					stS := qSts.Spec.Template.Spec.Template
 
 					// Test services for the quarks statefulSet
+					//
 					service0 := resources.Services[0]
 					Expect(service0.Spec.Selector).To(Equal(map[string]string{
 						manifest.LabelDeploymentName:    deploymentName,

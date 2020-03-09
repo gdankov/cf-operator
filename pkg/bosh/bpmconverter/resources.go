@@ -106,7 +106,7 @@ func (kc *BPMConverter) Resources(manifestName string, dns DomainNameService, qS
 			return nil, err
 		}
 
-		services := kc.serviceToKubeServices(manifestName, dns, instanceGroup, &convertedExtStatefulSet, bpmConfigs.IsActivePassiveModel())
+		services := kc.serviceToKubeServices(manifestName, dns, instanceGroup, &convertedExtStatefulSet, bpmConfigs)
 		if len(services) != 0 {
 			res.Services = append(res.Services, services...)
 		}
@@ -230,13 +230,15 @@ func (kc *BPMConverter) serviceToQuarksStatefulSet(
 }
 
 // serviceToKubeServices will generate Services which expose ports for InstanceGroup's jobs
-func (kc *BPMConverter) serviceToKubeServices(manifestName string, dns DomainNameService, instanceGroup *bdm.InstanceGroup, qSts *qstsv1a1.QuarksStatefulSet, activePassiveModel bool) []corev1.Service {
+func (kc *BPMConverter) serviceToKubeServices(manifestName string, dns DomainNameService, instanceGroup *bdm.InstanceGroup, qSts *qstsv1a1.QuarksStatefulSet, bpmConfigs bpm.Configs) []corev1.Service {
 	var services []corev1.Service
-	// Collect ports to be exposed for each job
-	ports := instanceGroup.ServicePorts()
+	// Collect ports from bpm configs
+	ports := bpmConfigs.ServicePorts()
 	if len(ports) == 0 {
 		return services
 	}
+
+	isActivePassiveModel := bpmConfigs.IsActivePassiveModel()
 
 	serviceLabels := func(azIndex, ordinal int, includeActiveSelector bool) map[string]string {
 		labels := map[string]string{
@@ -261,7 +263,7 @@ func (kc *BPMConverter) serviceToKubeServices(manifestName string, dns DomainNam
 				},
 				Spec: corev1.ServiceSpec{
 					Ports:    ports,
-					Selector: serviceLabels(0, i, activePassiveModel),
+					Selector: serviceLabels(0, i, isActivePassiveModel),
 				},
 			})
 		}
@@ -274,7 +276,7 @@ func (kc *BPMConverter) serviceToKubeServices(manifestName string, dns DomainNam
 				},
 				Spec: corev1.ServiceSpec{
 					Ports:    ports,
-					Selector: serviceLabels(azIndex, i, activePassiveModel),
+					Selector: serviceLabels(azIndex, i, isActivePassiveModel),
 				},
 			})
 		}
@@ -285,7 +287,7 @@ func (kc *BPMConverter) serviceToKubeServices(manifestName string, dns DomainNam
 		bdm.LabelDeploymentName:    manifestName,
 		bdm.LabelInstanceGroupName: instanceGroup.Name,
 	}
-	if activePassiveModel {
+	if isActivePassiveModel {
 		headlessServiceSelector[qstsv1a1.LabelActivePod] = "active"
 	}
 	headlessService := corev1.Service{
