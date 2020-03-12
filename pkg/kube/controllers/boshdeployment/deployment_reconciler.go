@@ -179,6 +179,7 @@ func (r *ReconcileBOSHDeployment) Reconcile(request reconcile.Request) (reconcil
 	// Update status of bdpl with the timestamp of the last reconcile
 	now := metav1.Now()
 	instance.Status.LastReconcile = &now
+	instance.Status.State = "Creating"
 
 	err = r.client.Status().Update(ctx, instance)
 	if err != nil {
