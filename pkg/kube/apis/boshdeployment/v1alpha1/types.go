@@ -56,6 +56,8 @@ type ResourceReference struct {
 type BOSHDeploymentStatus struct {
 	// Timestamp for the last reconcile
 	LastReconcile *metav1.Time `json:"lastReconcile"`
+	// State of the BoshDeployment
+	State string `json:"status"`
 }
 
 // +genclient
